@@ -4,6 +4,7 @@ import {z} from 'zod'
 import {sql} from '@vercel/postgres'
 import {revalidatePath} from 'next/cache'
 import {redirect} from 'next/navigation'
+import {signIn} from '@/auth'
 
 export type State = {
   errors?: {
@@ -109,11 +110,25 @@ export async function updateInvoice(
 // ...
 
 export async function deleteInvoice(id: string) {
-  throw new Error('Failed to Delete Invoice')
   try {
     await sql`DELETE FROM invoices WHERE id = ${id}`
   } catch (error) {
     return {message: 'Database Error: Failed to Delete Invoice.'}
   }
   revalidatePath('/dashboard/invoices')
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  console.log('Object.fromEntries(formData)', Object.fromEntries(formData))
+  try {
+    await signIn('credentials', Object.fromEntries(formData))
+  } catch (error) {
+    if ((error as Error).message.includes('CredentialsSignin')) {
+      return 'CredentialSignin'
+    }
+    throw error
+  }
 }
